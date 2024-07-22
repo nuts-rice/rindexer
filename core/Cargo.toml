@@ -14,7 +14,7 @@ mockito = "0.30"
 [dependencies]
 ethers = { version = "2.0", features = ["rustls", "openssl"] }
 tokio = { version = "1", features = ["full"] }
-tokio-postgres = { version="0.7", features=["with-uuid-1"] }
+tokio-postgres = { version = "0.7", features = ["with-uuid-1"] }
 bb8 = "0.8.3"
 bb8-postgres = "0.8.1"
 serde = "1.0"
@@ -38,7 +38,11 @@ tempfile = "3.9.0"
 ctrlc = "3.4.4"
 percent-encoding = "2.3.1"
 tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "time"] }
+tracing-subscriber = { version = "0.3", features = [
+    "env-filter",
+    "fmt",
+    "time",
+] }
 chrono = "0.4.38"
 log = "0.4.20"
 colored = "2.0"
@@ -57,6 +61,7 @@ prometheus-metric-storage = "0.5.0"
 metrics-exporter-prometheus = "0.15.3"
 metrics-util = "0.17.0"
 prometheus = "0.13.4"
+alloy = { version = "0.2.0", features = ["full"] }
 
 [profile.release]
 lto = "fat"

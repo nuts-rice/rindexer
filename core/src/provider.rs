@@ -3,29 +3,46 @@ use std::{
     time::{Duration, Instant},
 };
 
+// use alloy::providers::{Provider, ProviderBuilder, WsConnect};
 use ethers::{
     middleware::Middleware,
     prelude::Log,
     providers::{Http, Provider, ProviderError, RetryClient, RetryClientBuilder},
     types::{Block, BlockNumber, H256, U256, U64},
 };
+use ethers_providers::Ws;
 use thiserror::Error;
 use tokio::sync::Mutex;
 use url::Url;
 
 use crate::{event::RindexerEventFilter, manifest::core::Manifest};
 
+// #[derive(Debug)]
+// pub struct WsRpcProvider {
+//     pub provider: Arc<Provider<RetryClient<Ws>>>,
+//     cache: Mutex<Option<(Instant, Arc<Block<H256>>)>>,
+//     pub max_block_range: Option<U64>,
+// }
+
+// impl JsonRpcCachedProvider for WsRpcProvider {}
+
 #[derive(Debug)]
 pub struct JsonRpcCachedProvider {
-    provider: Arc<Provider<RetryClient<Http>>>,
+    // WSProvider: Arc<Provider<RetryClient<Ws>>>,
+    provider: Arc<ethers::providers::Provider<RetryClient<Http>>>,
     cache: Mutex<Option<(Instant, Arc<Block<H256>>)>>,
     pub max_block_range: Option<U64>,
 }
 
 impl JsonRpcCachedProvider {
-    pub fn new(provider: Provider<RetryClient<Http>>, max_block_range: Option<U64>) -> Self {
+    pub fn new(
+        provider: ethers::providers::Provider<RetryClient<Http>>,
+        // ws_provider: Provider<RetryClient<Ws>>,
+        max_block_range: Option<U64>,
+    ) -> Self {
         JsonRpcCachedProvider {
             provider: Arc::new(provider),
+            // WSProvider: Arc::new(ws_provider),
             cache: Mutex::new(None),
             max_block_range,
         }
@@ -65,7 +82,11 @@ impl JsonRpcCachedProvider {
         self.provider.get_chainid().await
     }
 
-    pub fn get_inner_provider(&self) -> Arc<Provider<RetryClient<Http>>> {
+    // pub fn get_inner_ws_provider(&self) -> Arc<Provider<RetryClient<Ws>>> {
+    //     Arc::clone(&self.WSProvider)
+    // }
+
+    pub fn get_inner_provider(&self) -> Arc<ethers::providers::Provider<RetryClient<Http>>> {
         Arc::clone(&self.provider)
     }
 }
@@ -75,16 +96,21 @@ pub enum RetryClientError {
     HttpProviderCantBeCreated(String, String),
 }
 
-pub fn create_client(
+pub async fn create_client(
     rpc_url: &str,
+    ws_rpc_url: &str,
     compute_units_per_second: Option<u64>,
     max_block_range: Option<U64>,
+    is_ws: bool,
 ) -> Result<Arc<JsonRpcCachedProvider>, RetryClientError> {
+    let ws_url = Url::parse(ws_rpc_url).expect("Couldn't parse ws url");
+
     let url = Url::parse(rpc_url).map_err(|e| {
         RetryClientError::HttpProviderCantBeCreated(rpc_url.to_string(), e.to_string())
     })?;
+
     let provider = Http::new(url);
-    let instance = Provider::new(
+    let instance = ethers::providers::Provider::new(
         RetryClientBuilder::default()
             // assume minimum compute units per second if not provided as growth plan standard
             .compute_units_per_second(compute_units_per_second.unwrap_or(660))
@@ -93,12 +119,17 @@ pub fn create_client(
             .initial_backoff(Duration::from_millis(500))
             .build(provider, Box::<ethers::providers::HttpRateLimitRetryPolicy>::default()),
     );
+    if is_ws {
+
+        // let ws_provider = Provider::<Ws>::connect(ws_url).await?;
+        // let ws_inst
+    }
     Ok(Arc::new(JsonRpcCachedProvider::new(instance, max_block_range)))
 }
 
 pub async fn get_chain_id(rpc_url: &str) -> Result<U256, ProviderError> {
     let url = Url::parse(rpc_url).map_err(|_| ProviderError::UnsupportedRPC)?;
-    let provider = Provider::new(Http::new(url));
+    let provider = ethers::providers::Provider::new(Http::new(url));
 
     provider.get_chainid().await
 }
@@ -110,14 +141,19 @@ pub struct CreateNetworkProvider {
 }
 
 impl CreateNetworkProvider {
-    pub fn create(manifest: &Manifest) -> Result<Vec<CreateNetworkProvider>, RetryClientError> {
+    pub async fn create(
+        manifest: &Manifest,
+    ) -> Result<Vec<CreateNetworkProvider>, RetryClientError> {
         let mut result: Vec<CreateNetworkProvider> = vec![];
         for network in &manifest.networks {
             let provider = create_client(
                 &network.rpc,
+                &network.ws_rpc,
                 network.compute_units_per_second,
                 network.max_block_range,
-            )?;
+                network.is_ws,
+            )
+            .await?;
             result.push(CreateNetworkProvider {
                 network_name: network.name.clone(),
                 client: provider,
@@ -131,6 +167,14 @@ impl CreateNetworkProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // #[test]
+    // fn test_create_ws_retry_client() {
+    //     let rpc_url = "http://localhost:8545";
+    //     let ws_rpc_url = "ws://localhost:8546";
+    //     let result = create_client(rpc_url, ws_rpc_url, Some(660), None, true);
+    //     assert!(result.is_ok());
+    // }
 
     #[test]
     fn test_create_retry_client() {

@@ -5,6 +5,10 @@ use super::core::{deserialize_option_u64_from_string, serialize_option_u64_as_st
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct Network {
+    pub is_ws: bool,
+
+    pub ws_rpc: String,
+
     pub name: String,
 
     pub chain_id: u64,
