@@ -57,7 +57,7 @@ prometheus-metric-storage = "0.5.0"
 metrics-exporter-prometheus = "0.15.3"
 metrics-util = "0.17.0"
 prometheus = "0.13.4"
-alloy = { version = "0.2.0", features = ["providers"] }
+alloy = { version = "0.2.0", features = ["providers", "rpc", "rpc-types", "transport-http", "transports"] }
 
 [profile.release]
 lto = "fat"
