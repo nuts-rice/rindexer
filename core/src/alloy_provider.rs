@@ -6,7 +6,7 @@ use std::{
 use alloy::{
     eips::{BlockId, BlockNumberOrTag},
     primitives::*,
-    providers::{network::AnyNetwork, Provider, ProviderBuilder},
+    providers::{network::AnyNetwork, Provider, ProviderBuilder, RootProvider},
     rpc::types::{Block, BlockTransactionsKind},
     transports::http::Http,
 };
@@ -19,13 +19,16 @@ pub enum AlloyProviderError {
 }
 // #[derive(Debug)]
 struct AlloyProvider {
-    provider: Arc<dyn Provider>,
+    provider: Arc<RootProvider<Http<reqwest::Client>>>,
     cache: Mutex<Option<(Instant, Arc<Block>)>>,
     pub max_block_range: Option<U64>,
 }
 
 impl AlloyProvider {
-    pub fn new(provider: Arc<dyn Provider>, max_block_range: Option<U64>) -> Self {
+    pub fn new(
+        provider: Arc<RootProvider<Http<reqwest::Client>>>,
+        max_block_range: Option<U64>,
+    ) -> Self {
         AlloyProvider { provider, cache: Mutex::new(None), max_block_range }
     }
 
@@ -56,7 +59,9 @@ pub fn create_client(
     rpc_url: &str,
     max_block_range: Option<U64>,
 ) -> Result<AlloyProvider, AlloyProviderError> {
-    todo!()
+    let url = rpc_url.parse().unwrap();
+    let http_provider = ProviderBuilder::new().on_http(url);
+    Ok(AlloyProvider::new(Arc::new(http_provider), max_block_range))
 }
 
 #[cfg(test)]
