@@ -7,17 +7,19 @@ use alloy::{
     eips::{BlockId, BlockNumberOrTag},
     primitives::*,
     providers::{network::AnyNetwork, Provider, ProviderBuilder, RootProvider},
-    rpc::types::{Block, BlockTransactionsKind},
-    transports::http::Http,
+    rpc::types::{Block, BlockTransactionsKind, Log},
+    transports::{http::Http, RpcError, TransportErrorKind},
 };
 use thiserror::Error;
 use tokio::sync::Mutex;
+
+use crate::event::RindexerEventFilter;
 #[derive(Error, Debug)]
 pub enum AlloyProviderError {
     #[error("Provider error for {0}: {1} ")]
     ProviderCreatorError(String, String),
 }
-// #[derive(Debug)]
+#[derive(Debug)]
 struct AlloyProvider {
     provider: Arc<RootProvider<Http<reqwest::Client>>>,
     cache: Mutex<Option<(Instant, Arc<Block>)>>,
@@ -53,6 +55,24 @@ impl AlloyProvider {
         }
         Ok(None)
     }
+
+    pub async fn get_block_number(&self) -> Result<u64, RpcError<TransportErrorKind>> {
+        self.provider.get_block_number().await
+    }
+
+    pub async fn get_logs(
+        &self,
+        filter: &RindexerEventFilter,
+    ) -> Result<Vec<Log>, AlloyProviderError> {
+        todo!()
+    }
+
+    pub async fn get_chain_id(&self) -> Result<U256, AlloyProviderError> {
+        todo!()
+    }
+    pub async fn get_provider(&self) -> Arc<RootProvider<Http<reqwest::Client>>> {
+        Arc::clone(&self.provider)
+    }
 }
 
 pub fn create_client(
@@ -74,9 +94,9 @@ mod tests {
             primitives::*,
             providers::{Provider, ProviderBuilder},
         };
-        let rpc_url = "https://eth.merkle.io".parse().unwrap();
-        let http_provider = ProviderBuilder::new().on_http(rpc_url);
-        let block_num = http_provider.get_block_number().await;
+        let rpc_url = "https://eth.merkle.io";
+        let result = create_client(rpc_url, None).unwrap();
+        let block_num = result.get_block_number().await;
         println!("block_num: {:?}", block_num);
     }
 }
