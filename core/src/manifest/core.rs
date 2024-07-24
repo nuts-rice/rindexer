@@ -1,4 +1,6 @@
-use ethers::prelude::U64;
+use std::str::FromStr;
+
+use alloy::primitives::U64;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 use serde_yaml::Value;
 
@@ -102,7 +104,7 @@ where
 {
     let s: Option<String> = Option::deserialize(deserializer)?;
     match s {
-        Some(string) => U64::from_dec_str(&string).map(Some).map_err(serde::de::Error::custom),
+        Some(string) => U64::from_str(&string).map(Some).map_err(serde::de::Error::custom),
         None => Ok(None),
     }
 }
@@ -115,7 +117,7 @@ where
     S: Serializer,
 {
     match *value {
-        Some(ref u64_value) => serializer.serialize_some(&u64_value.as_u64().to_string()),
+        Some(ref u64_value) => serializer.serialize_some(&u64_value.to::<u64>().to_string()),
         None => serializer.serialize_none(),
     }
 }
