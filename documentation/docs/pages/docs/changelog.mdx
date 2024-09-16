@@ -17,6 +17,157 @@
 
 all release branches are deployed through `release/VERSION_NUMBER` branches
 
+## 0.7.0-beta - 16th September 2024
+
+github branch - https://github.com/joshstevens19/rindexer/tree/release/0.7.0
+
+- linux binary - https://rindexer.xyz/releases/linux-amd64/0.7.0/rindexer_linux-amd64.tar.gz
+- mac apple silicon binary - https://rindexer.xyz/releases/darwin-arm64/0.7.0/rindexer_darwin-arm64.tar.gz
+- mac apple intel binary - https://rindexer.xyz/releases/darwin-amd64/0.7.0/rindexer_darwin-amd64.tar.gz
+- windows binary - https://rindexer/releases.xyz/win32-amd64/0.7.0/rindexer_win32-amd64.zip
+
+### Features
+-------------------------------------------------
+- feat: support multiple abis in a single contract
+- feat: allow array of filters in the same contract without repeating
+
+### Bug fixes
+-------------------------------------------------
+- fix: running rust project should only start indexer or graphql passed on args passed
+- fix: resolve issue of paths in generated typings
+- fix: when running rindexer codegen typings csv folder created
+- fix: underscores in events within a rust project maps it wrong in typings
+- fix: share a postgres instance across rust project
+
+## 0.6.2-beta - 24th August 2024
+
+github branch - https://github.com/joshstevens19/rindexer/tree/release/0.6.2
+
+- linux binary - https://rindexer.xyz/releases/linux-amd64/0.6.2/rindexer_linux-amd64.tar.gz
+- mac apple silicon binary - https://rindexer.xyz/releases/darwin-arm64/0.6.2/rindexer_darwin-arm64.tar.gz
+- mac apple intel binary - https://rindexer.xyz/releases/darwin-amd64/0.6.2/rindexer_darwin-amd64.tar.gz
+- windows binary - https://rindexer/releases.xyz/win32-amd64/0.6.2/rindexer_win32-amd64.zip
+
+### Bug fixes
+-------------------------------------------------
+- fix: Use the prefix when generating abi name properties.
+
+## 0.6.1-beta - 15th August 2024
+
+github branch - https://github.com/joshstevens19/rindexer/tree/release/0.6.1
+
+- linux binary - https://rindexer.xyz/releases/linux-amd64/0.6.1/rindexer_linux-amd64.tar.gz
+- mac apple silicon binary - https://rindexer.xyz/releases/darwin-arm64/0.6.1/rindexer_darwin-arm64.tar.gz
+- mac apple intel binary - https://rindexer.xyz/releases/darwin-amd64/0.6.1/rindexer_darwin-amd64.tar.gz
+- windows binary - https://rindexer/releases.xyz/win32-amd64/0.6.1/rindexer_win32-amd64.zip
+
+### Bug fixes
+-------------------------------------------------
+
+- fix: resolve issue with conflicting event names on graphql meaning it would not load
+- fix: resolve filter table names mapping to graphql meaning it would not expose the graphql queries
+
+## 0.6.0-beta - 8th August 2024
+
+github branch - https://github.com/joshstevens19/rindexer/tree/release/0.6.0
+
+- linux binary - https://rindexer.xyz/releases/linux-amd64/0.6.0/rindexer_linux-amd64.tar.gz
+- mac apple silicon binary - https://rindexer.xyz/releases/darwin-arm64/0.6.0/rindexer_darwin-arm64.tar.gz
+- mac apple intel binary - https://rindexer.xyz/releases/darwin-amd64/0.6.0/rindexer_darwin-amd64.tar.gz
+- windows binary - https://rindexer/releases.xyz/win32-amd64/0.6.0/rindexer_win32-amd64.zip
+
+### Features
+-------------------------------------------------
+
+- feat: add a disable_logs_bloom_checks field to the network section of the [YAML configuration file](https://rindexer.xyz/docs/start-building/yaml-config/networks#disable_logs_bloom_checks)
+
+
+## 0.5.1-beta - 7th August 2024
+
+github branch - https://github.com/joshstevens19/rindexer/tree/release/0.5.1
+
+- linux binary - https://rindexer.xyz/releases/linux-amd64/0.5.1/rindexer_linux-amd64.tar.gz
+- mac apple silicon binary - https://rindexer.xyz/releases/darwin-arm64/0.5.1/rindexer_darwin-arm64.tar.gz
+- mac apple intel binary - https://rindexer.xyz/releases/darwin-amd64/0.5.1/rindexer_darwin-amd64.tar.gz
+- windows binary - https://rindexer/releases.xyz/win32-amd64/0.5.1/rindexer_win32-amd64.zip
+
+### Bug fixes
+-------------------------------------------------
+
+- fix: resolve unhandled solidity types in solidity_type_to_ethereum_sql_type_wrapper
+
+## 0.5.0-beta - 6th August 2024
+
+github branch - https://github.com/joshstevens19/rindexer/tree/release/0.5.0
+
+- linux binary - https://rindexer.xyz/releases/linux-amd64/0.5.0/rindexer_linux-amd64.tar.gz
+- mac apple silicon binary - https://rindexer.xyz/releases/darwin-arm64/0.5.0/rindexer_darwin-arm64.tar.gz
+- mac apple intel binary - https://rindexer.xyz/releases/darwin-amd64/0.5.0/rindexer_darwin-amd64.tar.gz
+- windows binary - https://rindexer/releases.xyz/win32-amd64/0.5.0/rindexer_win32-amd64.zip
+
+### Features
+-------------------------------------------------
+
+- feat: support chatbots on telegram - https://rindexer.xyz/docs/start-building/chatbots/telegram
+- feat: support chatbots on discord - https://rindexer.xyz/docs/start-building/chatbots/discord
+- feat: support chatbots on slack - https://rindexer.xyz/docs/start-building/chatbots/slack
+- feat: support streams with kafka - https://rindexer.xyz/docs/start-building/streams/kafka
+- feat: support streams with rabbitmq - https://rindexer.xyz/docs/start-building/streams/rabbitmq
+- feat: support streams with webhooks - https://rindexer.xyz/docs/start-building/streams/webhooks
+- feat: support streams with sns/sqs - https://rindexer.xyz/docs/start-building/streams/sns
+- feat: create .gitignore file for new projects
+
+## 0.4.0-beta - 30th July 2024
+
+github branch - https://github.com/joshstevens19/rindexer/tree/release/0.4.0
+
+- linux binary - https://rindexer.xyz/releases/linux-amd64/0.4.0/rindexer_linux-amd64.tar.gz
+- mac apple silicon binary - https://rindexer.xyz/releases/darwin-arm64/0.4.0/rindexer_darwin-arm64.tar.gz
+- mac apple intel binary - https://rindexer.xyz/releases/darwin-amd64/0.4.0/rindexer_darwin-amd64.tar.gz
+- windows binary - https://rindexer/releases.xyz/win32-amd64/0.4.0/rindexer_win32-amd64.zip
+
+### Features
+-------------------------------------------------
+
+- feat: create a docker image and github workflow for building it when pushed
+
+## 0.3.1-beta - 30th July 2024
+
+github branch - https://github.com/joshstevens19/rindexer/tree/release/0.3.1
+
+- linux binary - https://rindexer.xyz/releases/linux-amd64/0.3.1/rindexer_linux-amd64.tar.gz
+- mac apple silicon binary - https://rindexer.xyz/releases/darwin-arm64/0.3.1/rindexer_darwin-arm64.tar.gz
+- mac apple intel binary - https://rindexer.xyz/releases/darwin-amd64/0.3.1/rindexer_darwin-amd64.tar.gz
+- windows binary - https://rindexer/releases.xyz/win32-amd64/0.3.1/rindexer_win32-amd64.zip
+
+### Bug fixes
+-------------------------------------------------
+
+- fix: throw an error if trying to include a non-event type in the `include_events` array
+- fix: postgres connection error issue seen on supabase
+- fix: refactor postgres new to always try ssl first then retry without ssl to be inline with best practices
+
+## 0.3.0-beta - 26th July 2024
+
+github branch - https://github.com/joshstevens19/rindexer/tree/release/0.3.0
+
+- linux binary - https://rindexer.xyz/releases/linux-amd64/0.3.0/rindexer_linux-amd64.tar.gz
+- mac apple silicon binary - https://rindexer.xyz/releases/darwin-arm64/0.3.0/rindexer_darwin-arm64.tar.gz
+- mac apple intel binary - https://rindexer.xyz/releases/darwin-amd64/0.3.0/rindexer_darwin-amd64.tar.gz
+- windows binary - https://rindexer/releases.xyz/win32-amd64/0.3.0/rindexer_win32-amd64.zip
+
+### Features
+-------------------------------------------------
+
+- feat: support for phantom events - https://rindexer.xyz/docs/start-building/phantom
+
+### Bug fixes
+-------------------------------------------------
+
+- fix: resolve issue with no inputs in events syntax error for postgres
+- fix: better error message when etherscan is not supported for network
+
+
 ## 0.2.0-beta - 21th July 2024
 
 github branch - https://github.com/joshstevens19/rindexer/tree/release/0.2.0
@@ -36,7 +187,7 @@ github branch - https://github.com/joshstevens19/rindexer/tree/release/0.2.0
 ### Bug fixes
 -------------------------------------------------
 
-fix: resolve `substitute_env_variables` to use `${}` instead of `$<>` for env variables
+- fix: resolve `substitute_env_variables` to use `${}` instead of `$<>` for env variables
 
 ## 0.1.4-beta - 20th July 2024
 
@@ -97,7 +248,7 @@ github branch - https://github.com/joshstevens19/rindexer/tree/release/0.1.1
 ### Bug fixes
 -------------------------------------------------
 
-fix: support all the int solidity types - https://github.com/joshstevens19/rindexer/issues/45
+- fix: support all the int solidity types - https://github.com/joshstevens19/rindexer/issues/45
 
 ## 0.1.0-beta - 15th July 2024
 -------------------------------------------------

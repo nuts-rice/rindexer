@@ -6,6 +6,7 @@ use crate::{
     abi::{ABIInput, ABIItem, EventInfo, GenerateAbiPropertiesType, ParamTypeError, ReadAbiError},
     helpers::camel_to_snake,
     indexer::Indexer,
+    manifest::contract::Contract,
     types::code::Code,
 };
 
@@ -38,17 +39,28 @@ pub fn generate_column_names_only_with_base_properties(inputs: &[ABIInput]) -> V
     column_names
 }
 
-fn generate_event_table_sql(abi_inputs: &[EventInfo], schema_name: &str) -> String {
+fn generate_event_table_sql_with_comments(
+    abi_inputs: &[EventInfo],
+    contract_name: &str,
+    schema_name: &str,
+    apply_full_name_comment_for_events: Vec<String>,
+) -> String {
     abi_inputs
         .iter()
         .map(|event_info| {
             let table_name = format!("{}.{}", schema_name, camel_to_snake(&event_info.name));
             info!("Creating table if not exists: {}", table_name);
-            format!(
+            let event_columns = if event_info.inputs.is_empty() {
+                "".to_string()
+            } else {
+                generate_columns_with_data_types(&event_info.inputs).join(", ") + ","
+            };
+
+            let create_table_sql = format!(
                 "CREATE TABLE IF NOT EXISTS {} (\
                 rindexer_id SERIAL PRIMARY KEY NOT NULL, \
                 contract_address CHAR(66) NOT NULL, \
-                {}, \
+                {} \
                 tx_hash CHAR(66) NOT NULL, \
                 block_number NUMERIC NOT NULL, \
                 block_hash CHAR(66) NOT NULL, \
@@ -56,9 +68,20 @@ fn generate_event_table_sql(abi_inputs: &[EventInfo], schema_name: &str) -> Stri
                 tx_index NUMERIC NOT NULL, \
                 log_index VARCHAR(78) NOT NULL\
             );",
-                table_name,
-                generate_columns_with_data_types(&event_info.inputs).join(", ")
-            )
+                table_name, event_columns
+            );
+
+            if !apply_full_name_comment_for_events.contains(&event_info.name) {
+                return create_table_sql;
+            }
+
+            // smart comments needed to avoid clashing of order by graphql names
+            let table_comment = format!(
+                "COMMENT ON TABLE {} IS E'@name {}{}';",
+                table_name, contract_name, event_info.name
+            );
+
+            format!("{}\n{}", create_table_sql, table_comment)
         })
         .collect::<Vec<_>>()
         .join("\n")
@@ -102,6 +125,37 @@ pub enum GenerateTablesForIndexerSqlError {
     ParamTypeError(#[from] ParamTypeError),
 }
 
+/// If any event names match the whole table name should be exposed differently on graphql
+/// to avoid clashing of graphql namings
+fn find_clashing_event_names(
+    project_path: &Path,
+    current_contract: &Contract,
+    other_contracts: &[Contract],
+    current_event_names: &[EventInfo],
+) -> Result<Vec<String>, GenerateTablesForIndexerSqlError> {
+    let mut clashing_events = Vec::new();
+
+    for other_contract in other_contracts {
+        if other_contract.name == current_contract.name {
+            continue;
+        }
+
+        let other_abi_items = ABIItem::read_abi_items(project_path, other_contract)?;
+        let other_event_names =
+            ABIItem::extract_event_names_and_signatures_from_abi(other_abi_items)?;
+
+        for event_name in current_event_names {
+            if other_event_names.iter().any(|e| e.name == event_name.name) &&
+                !clashing_events.contains(&event_name.name)
+            {
+                clashing_events.push(event_name.name.clone());
+            }
+        }
+    }
+
+    Ok(clashing_events)
+}
+
 pub fn generate_tables_for_indexer_sql(
     project_path: &Path,
     indexer: &Indexer,
@@ -118,7 +172,15 @@ pub fn generate_tables_for_indexer_sql(
 
         let networks: Vec<&str> = contract.details.iter().map(|d| d.network.as_str()).collect();
 
-        sql.push_str(&generate_event_table_sql(&event_names, &schema_name));
+        let event_matching_name_on_other =
+            find_clashing_event_names(project_path, contract, &indexer.contracts, &event_names)?;
+
+        sql.push_str(&generate_event_table_sql_with_comments(
+            &event_names,
+            &contract.name,
+            &schema_name,
+            event_matching_name_on_other,
+        ));
         sql.push_str(&generate_internal_event_table_sql(&event_names, &schema_name, networks));
     }
 
@@ -195,6 +257,7 @@ pub fn drop_tables_for_indexer_sql(project_path: &Path, indexer: &Indexer) -> Co
     Code::new(sql)
 }
 
+#[allow(clippy::manual_strip)]
 pub fn solidity_type_to_db_type(abi_type: &str) -> String {
     let is_array = abi_type.ends_with("[]");
     let base_type = abi_type.trim_end_matches("[]");

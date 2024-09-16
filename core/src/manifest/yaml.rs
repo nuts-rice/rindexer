@@ -5,12 +5,15 @@ use std::{
     path::{Path, PathBuf},
 };
 
+use ethers::types::ValueOrArray;
 use regex::{Captures, Regex};
+use tracing::error;
 
 use crate::{
     abi::ABIItem,
     helpers::replace_env_variable_to_raw_name,
     manifest::core::{Manifest, ProjectType},
+    StringOrArray,
 };
 
 pub const YAML_CONFIG_NAME: &str = "rindexer.yaml";
@@ -22,6 +25,7 @@ fn substitute_env_variables(contents: &str) -> Result<String, regex::Error> {
         match env::var(var_name) {
             Ok(val) => val,
             Err(_) => {
+                error!("Environment variable {} not found", var_name);
                 panic!("Environment variable {} not found", var_name)
             }
         }
@@ -40,7 +44,7 @@ pub enum ValidateManifestError {
     #[error("Could not read or parse ABI for contract {0} with path {1}")]
     InvalidABI(String, String),
 
-    #[error("Event {0} included in include_events for contract {1} not found in ABI")]
+    #[error("Event {0} included in include_events for contract {1} but not found in ABI - it must be an event type and match the name exactly")]
     EventIncludedNotFoundInABI(String, String),
 
     #[error("Event {0} not found in ABI for contract {1}")]
@@ -54,6 +58,12 @@ pub enum ValidateManifestError {
 
     #[error("Relationship foreign key contract {0} not found")]
     RelationshipForeignKeyContractNotFound(String),
+
+    #[error("Streams config is invalid: {0}")]
+    StreamsConfigValidationError(String),
+
+    #[error("Global ABI can only be a single string")]
+    GlobalAbiCanOnlyBeASingleString(String),
 }
 
 fn validate_manifest(
@@ -73,12 +83,30 @@ fn validate_manifest(
                 ));
             }
 
-            if let Some(address) = &detail.filter {
-                if !events.iter().any(|e| e.name == *address.event_name) {
-                    return Err(ValidateManifestError::InvalidFilterEventNameDoesntExistInABI(
-                        address.event_name.clone(),
-                        contract.name.clone(),
-                    ));
+            if let Some(filter_details) = &detail.filter {
+                match filter_details {
+                    ValueOrArray::Value(filter_details) => {
+                        if !events.iter().any(|e| e.name == *filter_details.event_name) {
+                            return Err(
+                                ValidateManifestError::InvalidFilterEventNameDoesntExistInABI(
+                                    filter_details.event_name.clone(),
+                                    contract.name.clone(),
+                                ),
+                            );
+                        }
+                    }
+                    ValueOrArray::Array(filters) => {
+                        for filter_details in filters {
+                            if !events.iter().any(|e| e.name == *filter_details.event_name) {
+                                return Err(
+                                    ValidateManifestError::InvalidFilterEventNameDoesntExistInABI(
+                                        filter_details.event_name.clone(),
+                                        contract.name.clone(),
+                                    ),
+                                );
+                            }
+                        }
+                    }
                 }
             }
 
@@ -113,7 +141,7 @@ fn validate_manifest(
 
         if let Some(include_events) = &contract.include_events {
             for event in include_events {
-                if !events.iter().any(|e| e.name == *event) {
+                if !events.iter().any(|e| e.name == *event && e.type_ == "event") {
                     return Err(ValidateManifestError::EventIncludedNotFoundInABI(
                         event.clone(),
                         contract.name.clone(),
@@ -124,6 +152,12 @@ fn validate_manifest(
 
         if let Some(_dependency_events) = &contract.dependency_events {
             // TODO - validate the events all exist in the contract ABIs
+        }
+
+        if let Some(streams) = &contract.streams {
+            if let Err(e) = streams.validate() {
+                return Err(ValidateManifestError::StreamsConfigValidationError(e));
+            }
         }
     }
 
@@ -149,6 +183,24 @@ fn validate_manifest(
         }
     }
 
+    if let Some(global) = &manifest.global {
+        if let Some(contracts) = &global.contracts {
+            for contract in contracts {
+                match &contract.abi {
+                    StringOrArray::Single(_) => {}
+                    StringOrArray::Multiple(value) => {
+                        return Err(ValidateManifestError::GlobalAbiCanOnlyBeASingleString(
+                            format!(
+                                "Global ABI can only be a single string but found multiple: {:?}",
+                                value
+                            ),
+                        ));
+                    }
+                }
+            }
+        }
+    }
+
     Ok(())
 }
 
@@ -168,6 +220,24 @@ pub enum ReadManifestError {
 
     #[error("No project path found using parent of manifest path")]
     NoProjectPathFoundUsingParentOfManifestPath,
+}
+
+pub fn read_manifest_raw(file_path: &PathBuf) -> Result<Manifest, ReadManifestError> {
+    let mut file = File::open(file_path)?;
+    let mut contents = String::new();
+
+    file.read_to_string(&mut contents)?;
+
+    let manifest: Manifest = serde_yaml::from_str(&contents)?;
+
+    let project_path = file_path.parent();
+    match project_path {
+        None => Err(ReadManifestError::NoProjectPathFoundUsingParentOfManifestPath),
+        Some(project_path) => {
+            validate_manifest(project_path, &manifest)?;
+            Ok(manifest)
+        }
+    }
 }
 
 pub fn read_manifest(file_path: &PathBuf) -> Result<Manifest, ReadManifestError> {

@@ -16,7 +16,7 @@ use rindexer::{
         storage::{CsvDetails, PostgresDetails, Storage},
         yaml::{write_manifest, YAML_CONFIG_NAME},
     },
-    write_file, WriteFileError,
+    write_file, StringOrArray, WriteFileError,
 };
 
 use crate::console::{
@@ -50,6 +50,15 @@ fn write_example_abi(rindexer_abis_folder: &Path) -> Result<PathBuf, WriteFileEr
 
 fn write_docker_compose(path: &Path) -> Result<(), WriteFileError> {
     write_file(&path.join("docker-compose.yml"), generate_docker_file())
+}
+
+fn write_gitignore(path: &Path) -> Result<(), WriteFileError> {
+    write_file(
+        &path.join(".gitignore"),
+        r#".rindexer
+    generated_csv/**/*.txt
+    "#,
+    )
 }
 
 pub fn handle_new_command(
@@ -131,6 +140,7 @@ pub fn handle_new_command(
             rpc: "https://mainnet.gateway.tenderly.co".to_string(),
             compute_units_per_second: None,
             max_block_range: None,
+            disable_logs_bloom_checks: None,
         }],
         contracts: vec![Contract {
             name: "RocketPoolETH".to_string(),
@@ -145,13 +155,16 @@ pub fn handle_new_command(
                 Some(U64::from(18900000)),
                 Some(U64::from(19000000)),
             )],
-            abi: abi_example_path.display().to_string(),
+            abi: StringOrArray::Single(abi_example_path.display().to_string()),
             include_events: Some(vec!["Transfer".to_string(), "Approval".to_string()]),
             index_event_in_order: None,
             dependency_events: None,
             reorg_safe_distance: None,
             generate_csv: None,
+            streams: None,
+            chat: None,
         }],
+        phantom: None,
         global: None,
         storage: Storage {
             postgres: if postgres_enabled {
@@ -209,6 +222,8 @@ POSTGRES_PASSWORD=rindexer"#;
     if is_rust_project {
         generate_rindexer_rust_project(&project_path);
     }
+
+    write_gitignore(&project_path)?;
 
     print_success_message(&success_message);
 

@@ -13,6 +13,7 @@ mockito = "0.30"
 
 [dependencies]
 ethers = { version = "2.0", features = ["rustls", "openssl"] }
+ethers-solc = "2.0.14"
 tokio = { version = "1", features = ["full"] }
 tokio-postgres = { version="0.7", features=["with-uuid-1"] }
 bb8 = "0.8.3"
@@ -42,10 +43,20 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "time"]
 chrono = "0.4.38"
 log = "0.4.20"
 colored = "2.0"
-reqwest = { version = "0.12", features = ["json"] }
+hex = "0.4.3"
+uuid = { version = "1.10.0", features = ["v4"] }
+# do not change version as have to match ethers at the moment
+reqwest = { version = "0.11.27", features = ["json"] }
 thread_local = "1.1"
 native-tls = "0.2"
 postgres-native-tls = "0.5"
+aws-config = "1.5.0"
+aws-sdk-sns = "1.37.0"
+lapin = "2.5.0"
+deadpool = { version = "0.12", features = ["rt_tokio_1"] }
+deadpool-lapin = "0.12"
+teloxide = "0.12"
+serenity = { version = "0.12", features = ["client", "framework"] }
 
 # build
 jemallocator = { version = "0.5.0", optional = true }
@@ -57,6 +68,12 @@ prometheus-metric-storage = "0.5.0"
 metrics-exporter-prometheus = "0.15.3"
 metrics-util = "0.17.0"
 prometheus = "0.13.4"
+
+[target.'cfg(not(windows))'.dependencies]
+rdkafka = { version = "0.36", features = ["tokio"] }
+
+[target.'cfg(windows)'.dependencies]
+rdkafka = { version = "0.36", features = ["tokio", "cmake-build"] }
 
 [profile.release]
 lto = "fat"

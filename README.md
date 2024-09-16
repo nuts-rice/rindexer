@@ -1,6 +1,6 @@
-# 🦀 rindexer 🦀
+# 🦀 rindexer 🦀 
 
-Note rindexer is brand new and only in beta and actively under development, things will change and bugs will exist - if you find any bugs or have any
+Note rindexer is brand new and actively under development, things will change and bugs will exist - if you find any bugs or have any
 feature requests please open an issue on [github](https://github.com/joshstevens19/rindexer/issues).
 
 rindexer is an opensource powerful, high-speed indexing toolset developed in Rust, designed for compatibility with any EVM chain.
@@ -9,7 +9,7 @@ For more advanced needs, the rindexer provides foundations and advanced capabili
 It's highly extendable, enabling you to construct indexing pipelines with ease and focus exclusively on the logic.
 rindexer out the box also gives you a GraphQL API to query the data you have indexed instantly.
 
-You can get to the full rindexer [documentation](https://rindexer.xyz/docs/introduction/installation).
+You can get to the full rindexer [documentation](https://rindexer.xyz/).
 
 ## Install 
 
@@ -39,6 +39,7 @@ Commands:
   add           Add elements such as contracts to the rindexer.yaml file
   codegen       Generates rust code based on rindexer.yaml or graphql queries
   delete        Delete data from the postgres database or csv files
+  phantom       Use phantom events to add your own events to contracts
   help          Print this message or the help of the given subcommand(s)
 
 Options:
@@ -48,6 +49,41 @@ Options:
 
 We have full documentation https://rindexer.xyz/docs/introduction/installation which goes into more detail on how to use 
 rindexer and all the commands available to you.
+
+## Docker
+
+There's a pre-built docker image which can be used to run `rindexer` inside your dockerized infra:
+
+[`ghcr.io/joshstevens19/rindexer`](https://github.com/users/joshstevens19/packages/container/package/rindexer)
+
+### Create new project
+To create a new `no-code` project in your current directory, you can run the following:
+
+`docker run -it -v $PWD:/app/project_path ghcr.io/joshstevens19/rindexer new -p /app/project_path no-code`
+
+### Use with existing project
+To use it with an existing project and a running postgres instance you can simply invoke:
+
+```
+export PROJECT_PATH=/path/to/your/project
+export DATABASE_URL="postgresql://user:pass@postgres/db"
+
+docker-compose up -d
+```
+
+This will start all local indexing and if you have enabled the graphql endpoint, it will become exposed under:
+
+http://localhost:3001
+
+## Helm Chart
+
+We also provide a Helm chart for deploying `rindexer` in Kubernetes environments. The Helm chart simplifies the deployment process and allows for easy customization of the deployment parameters.
+
+You can find the Helm chart in the following directory:
+
+- **[rindexer Helm Chart](https://github.com/joshstevens19/rindexer/tree/master/helm/rindexer)**
+
+To use the Helm chart, follow the instructions in the [Helm Chart README](https://github.com/joshstevens19/rindexer/tree/master/helm/rindexer/README.md) to deploy `rindexer` to your Kubernetes cluster.
 
 ## What can I use rindexer for?
 
@@ -110,6 +146,13 @@ you can run `cargo fmt` to format the code, rules have been mapped in the `rustf
 
 Anyone is welcome to contribute to rindexer, feel free to look over the issues or open a new one if you have
 any new ideas or bugs you have found.
+
+### Playing around with the CLI locally
+
+You can use the `make` commands to run the CLI commands locally, this is useful for testing and developing.
+These are located in the `cli` folder > `Makefile`. It uses `CURDIR` to resolve the paths for you, so they should work
+out of the box. The examples repo has a `rindexer_demo_cli` folder which you can modify (please do not commit any changes though) 
+or spin up a new no-code project using the make commands.
 
 ## Release
 

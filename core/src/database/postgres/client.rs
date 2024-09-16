@@ -10,11 +10,12 @@ use postgres_native_tls::MakeTlsConnector;
 use tokio::{task, time::timeout};
 use tokio_postgres::{
     binary_copy::BinaryCopyInWriter,
+    config::SslMode,
     types::{ToSql, Type as PgType},
     Config, CopyInSink, Error as PgError, Row, Statement, ToStatement,
     Transaction as PgTransaction,
 };
-use tracing::debug;
+use tracing::{debug, error};
 
 use crate::database::postgres::{
     generate::generate_event_table_columns_names_sql, sql_type_wrapper::EthereumSqlTypeWrapper,
@@ -75,51 +76,69 @@ pub struct PostgresClient {
 
 impl PostgresClient {
     pub async fn new() -> Result<Self, PostgresConnectionError> {
-        let connection_str = connection_string()?;
-        let config: Config = connection_str
-            .parse()
-            .map_err(|_| PostgresConnectionError::CouldNotParseConnectionString)?;
+        async fn _new(disable_ssl: bool) -> Result<PostgresClient, PostgresConnectionError> {
+            let connection_str = connection_string()?;
+            let mut config: Config = connection_str
+                .parse()
+                .map_err(|_| PostgresConnectionError::CouldNotParseConnectionString)?;
 
-        let connector = TlsConnector::builder()
-            .build()
-            .map_err(|_| PostgresConnectionError::CouldNotCreateTlsConnector)?;
-        let tls_connector = MakeTlsConnector::new(connector);
+            if disable_ssl {
+                config.ssl_mode(SslMode::Disable);
+            }
 
-        // Perform a direct connection test
-        let (client, connection) = match timeout(
-            Duration::from_millis(500),
-            config.connect(tls_connector.clone()),
-        )
-        .await
-        {
-            Ok(Ok((client, connection))) => (client, connection),
-            Ok(Err(_)) => return Err(PostgresConnectionError::CanNotConnectToDatabase),
-            Err(_) => return Err(PostgresConnectionError::CanNotConnectToDatabase),
-        };
+            let connector = TlsConnector::builder()
+                .build()
+                .map_err(|_| PostgresConnectionError::CouldNotCreateTlsConnector)?;
+            let tls_connector = MakeTlsConnector::new(connector);
 
-        // Spawn the connection future to ensure the connection is established
-        let connection_handle = task::spawn(connection);
+            // Perform a direct connection test
+            let (client, connection) =
+                match timeout(Duration::from_millis(5000), config.connect(tls_connector.clone()))
+                    .await
+                {
+                    Ok(Ok((client, connection))) => (client, connection),
+                    Ok(Err(e)) => {
+                        // retry without ssl if ssl has been attempted and failed
+                        if !disable_ssl &&
+                            config.get_ssl_mode() != SslMode::Disable &&
+                            !connection_str.contains("sslmode=require")
+                        {
+                            return Box::pin(_new(true)).await;
+                        }
+                        error!("Error connecting to database: {}", e);
+                        return Err(PostgresConnectionError::CanNotConnectToDatabase);
+                    }
+                    Err(e) => {
+                        error!("Timeout connecting to database: {}", e);
+                        return Err(PostgresConnectionError::CanNotConnectToDatabase);
+                    }
+                };
 
-        // Perform a simple query to check the connection
-        match client.query_one("SELECT 1", &[]).await {
-            Ok(_) => {}
-            Err(_) => return Err(PostgresConnectionError::CanNotConnectToDatabase),
-        };
+            // Spawn the connection future to ensure the connection is established
+            let connection_handle = task::spawn(connection);
 
-        // Drop the client and ensure the connection handle completes
-        drop(client);
-        match connection_handle.await {
-            Ok(Ok(())) => (),
-            Ok(Err(_)) => return Err(PostgresConnectionError::CanNotConnectToDatabase),
-            Err(_) => return Err(PostgresConnectionError::CanNotConnectToDatabase),
+            // Perform a simple query to check the connection
+            match client.query_one("SELECT 1", &[]).await {
+                Ok(_) => {}
+                Err(_) => return Err(PostgresConnectionError::CanNotConnectToDatabase),
+            };
+
+            // Drop the client and ensure the connection handle completes
+            drop(client);
+            match connection_handle.await {
+                Ok(Ok(())) => (),
+                Ok(Err(_)) => return Err(PostgresConnectionError::CanNotConnectToDatabase),
+                Err(_) => return Err(PostgresConnectionError::CanNotConnectToDatabase),
+            }
+
+            let manager = PostgresConnectionManager::new(config, tls_connector);
+
+            let pool = Pool::builder().build(manager).await?;
+
+            Ok(PostgresClient { pool })
         }
 
-        let manager =
-            PostgresConnectionManager::new_from_stringlike(&connection_str, tls_connector)?;
-
-        let pool = Pool::builder().build(manager).await?;
-
-        Ok(Self { pool })
+        _new(false).await
     }
 
     pub async fn batch_execute(&self, sql: &str) -> Result<(), PostgresError> {

@@ -10,11 +10,6 @@ pub use rindexer_erc20_filter_gen::*;
     non_camel_case_types
 )]
 pub mod rindexer_erc20_filter_gen {
-    const _: () = {
-        ::core::include_bytes!(
-            "/Users/joshstevens/code/rindexer/rindexer_rust_playground/abis/erc20-abi.json",
-        );
-    };
     #[allow(deprecated)]
     fn __abi() -> ::ethers::core::abi::Abi {
         ::ethers::core::abi::ethabi::Contract {

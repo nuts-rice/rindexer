@@ -11,6 +11,7 @@ use crate::{
     generate_random_id,
     manifest::contract::{Contract, EventInputIndexedFilters},
     provider::{CreateNetworkProvider, JsonRpcCachedProvider},
+    types::single_or_array::StringOrArray,
 };
 
 #[derive(Clone)]
@@ -22,6 +23,7 @@ pub struct NetworkContract {
     pub decoder: Decoder,
     pub start_block: Option<U64>,
     pub end_block: Option<U64>,
+    pub disable_logs_bloom_checks: bool,
 }
 
 impl NetworkContract {
@@ -38,7 +40,7 @@ impl NetworkContract {
 pub struct ContractInformation {
     pub name: String,
     pub details: Vec<NetworkContract>,
-    pub abi: String,
+    pub abi: StringOrArray,
     pub reorg_safe_distance: bool,
 }
 
@@ -73,6 +75,7 @@ impl ContractInformation {
                         indexing_contract_setup: c.indexing_contract_setup(),
                         start_block: c.start_block,
                         end_block: c.end_block,
+                        disable_logs_bloom_checks: provider.disable_logs_bloom_checks,
                     });
                 }
             }
@@ -115,7 +118,7 @@ pub struct FactoryDetails {
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct FilterDetails {
-    pub event_name: String,
+    pub events: ValueOrArray<String>,
 
     pub indexed_filters: Option<EventInputIndexedFilters>,
 }

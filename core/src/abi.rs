@@ -1,6 +1,9 @@
-use std::{fs, iter::Map, path::Path};
+use std::{collections::HashSet, fs, iter::Map, path::Path};
 
-use ethers::{types::H256, utils::keccak256};
+use ethers::{
+    types::{ValueOrArray, H256},
+    utils::keccak256,
+};
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -9,16 +12,21 @@ use crate::{
         sql_type_wrapper::{solidity_type_to_ethereum_sql_type_wrapper, EthereumSqlTypeWrapper},
     },
     event::contract_setup::IndexingContractSetup,
-    helpers::{camel_to_snake, get_full_path},
-    manifest::contract::Contract,
+    helpers::camel_to_snake,
+    manifest::contract::{Contract, ParseAbiError},
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ABIInput {
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub indexed: Option<bool>,
+
     pub name: String,
+
     #[serde(rename = "type")]
     pub type_: String,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub components: Option<Vec<ABIInput>>,
 }
 
@@ -82,10 +90,14 @@ impl ABIInput {
             .iter()
             .flat_map(|input| {
                 if let Some(components) = &input.components {
+                    let new_prefix = match prefix {
+                        Some(p) => format!("{}_{}", p, camel_to_snake(&input.name)),
+                        None => camel_to_snake(&input.name),
+                    };
                     ABIInput::generate_abi_name_properties(
                         components,
                         properties_type,
-                        Some(&camel_to_snake(&input.name)),
+                        Some(&new_prefix),
                     )
                 } else {
                     match properties_type {
@@ -141,8 +153,10 @@ impl ABIInput {
 pub struct ABIItem {
     #[serde(default)]
     pub inputs: Vec<ABIInput>,
+
     #[serde(default)]
     pub name: String,
+
     #[serde(rename = "type", default)]
     pub type_: String,
 }
@@ -157,6 +171,9 @@ pub enum ReadAbiError {
 
     #[error("Could not read ABI JSON: {0}")]
     CouldNotReadAbiJson(#[from] serde_json::Error),
+
+    #[error("{0}")]
+    ParseAbiError(#[from] ParseAbiError),
 }
 
 impl ABIItem {
@@ -186,9 +203,7 @@ impl ABIItem {
         project_path: &Path,
         contract: &Contract,
     ) -> Result<Vec<ABIItem>, ReadAbiError> {
-        let full_path = get_full_path(project_path, &contract.abi)
-            .map_err(|_| ReadAbiError::AbiPathDoesNotExist(contract.abi.clone()))?;
-        let abi_str = fs::read_to_string(full_path)?;
+        let abi_str = contract.parse_abi(project_path)?;
         let abi_items: Vec<ABIItem> = serde_json::from_str(&abi_str)?;
 
         let filtered_abi_items = match &contract.include_events {
@@ -209,16 +224,20 @@ impl ABIItem {
     ) -> Result<Vec<ABIItem>, ReadAbiError> {
         let mut abi_items = ABIItem::read_abi_items(project_path, contract)?;
         if is_filter {
-            let filter_event_names: Vec<String> = contract
+            let filter_event_names: HashSet<String> = contract
                 .details
                 .iter()
                 .filter_map(|detail| {
                     if let IndexingContractSetup::Filter(filter) = &detail.indexing_contract_setup()
                     {
-                        Some(filter.event_name.clone())
+                        Some(filter.events.clone())
                     } else {
                         None
                     }
+                })
+                .flat_map(|events| match events {
+                    ValueOrArray::Value(event) => vec![event.clone()],
+                    ValueOrArray::Array(event_array) => event_array.clone(),
                 })
                 .collect();
 

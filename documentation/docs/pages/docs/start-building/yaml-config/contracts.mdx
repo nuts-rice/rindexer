@@ -15,6 +15,7 @@ on generated rust code if you are using the rust project.
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks:
   - name: ethereum
     chain_id: 1
@@ -38,6 +39,7 @@ The network name to listen for events on, this should match the network name in 
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks:
   - name: ethereum
     chain_id: 1
@@ -63,6 +65,7 @@ The contract address to listen for events on.
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks:
   - name: ethereum
     chain_id: 1
@@ -74,7 +77,7 @@ contracts: // [!code focus]
   - name: RocketPoolETH
     details:
       - network: ethereum
-        address: 0xae78736cd615f374d3085123a210448e74fc6393 // [!code focus]
+        address: "0xae78736cd615f374d3085123a210448e74fc6393" // [!code focus]
 ```
 
 To listen to many contract addresses you can provide an array of addresses.
@@ -83,6 +86,7 @@ To listen to many contract addresses you can provide an array of addresses.
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks:
   - name: ethereum
     chain_id: 1
@@ -95,8 +99,8 @@ contracts: // [!code focus]
     details:
       - network: ethereum
         address:
-          - 0xae78736cd615f374d3085123a210448e74fc6393 // [!code focus]
-          - 0x2FD5c1659A82E87217DF254f3D4b71A22aE43eE1 // [!code focus]
+          - "0xae78736cd615f374d3085123a210448e74fc6393" // [!code focus]
+          - "0x2FD5c1659A82E87217DF254f3D4b71A22aE43eE1" // [!code focus]
 ```
 
 ### filter
@@ -122,6 +126,7 @@ The event name to filter on, it must match the ABI event name.
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks:
   - name: ethereum
     chain_id: 1
@@ -137,17 +142,15 @@ contracts: // [!code focus]
           event_name: Transfer // [!code focus]
 ```
 
-#### Index more then 1 filter
+#### Index more then 1 filter for the contract
 
-To use more then 1 filter at the moment you have to add a new entry in the details, we will merge this into `event_name`
-soon which will turn this into accepting an singular filter details or an array of filter details https://github.com/joshstevens19/rindexer/issues/40.
-
-For now you have to do it like this:
+You can just pass in an array of events names to index on the filter.
 
 ```yaml [rindexer.yaml]
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks:
   - name: ethereum
     chain_id: 1
@@ -160,10 +163,8 @@ contracts: // [!code focus]
     details:
       - network: ethereum
         filter: // [!code focus]
-          event_name: Transfer // [!code focus]
-      - network: ethereum
-        filter: // [!code focus]
-          event_name: Approval // [!code focus]
+          - event_name: Transfer // [!code focus]
+          - event_name: Approval // [!code focus]
 ```
 
 ### indexed_1, indexed_2, indexed_3
@@ -219,6 +220,7 @@ and `0x0338ce5020c447f7e668dc2ef778025ce398266b` you could set the indexed filte
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks:
   - name: ethereum
     chain_id: 1
@@ -230,12 +232,12 @@ contracts: // [!code focus]
    - name: RocketPoolETH
      details:
        - network: ethereum
-         address: 0xae78736cd615f374d3085123a210448e74fc6393
+         address: "0xae78736cd615f374d3085123a210448e74fc6393"
          indexed_filters: // [!code focus]
            - event_name: Approval // [!code focus]
              indexed_1:
-               - 0xd87b8e0db0cf9cbf9963c035a6ad72d614e37fd5 // [!code focus]
-               - 0x0338ce5020c447f7e668dc2ef778025ce398266b // [!code focus]
+               - "0xd87b8e0db0cf9cbf9963c035a6ad72d614e37fd5" // [!code focus]
+               - "0x0338ce5020c447f7e668dc2ef778025ce398266b" // [!code focus]
 ```
 
 Another example using filters is if you wanted to get all the approvals for any token for owner `0xd87b8e0db0cf9cbf9963c035a6ad72d614e37fd5`
@@ -245,6 +247,7 @@ and `0x0338ce5020c447f7e668dc2ef778025ce398266b` you could set the indexed filte
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks:
   - name: ethereum
     chain_id: 1
@@ -280,6 +283,7 @@ You can read more about this [here](/docs/start-building/live-indexing-and-histo
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks:
   - name: ethereum
     chain_id: 1
@@ -291,7 +295,7 @@ contracts: // [!code focus]
   - name: RocketPoolETH
     details:
       - network: ethereum
-        address: 0xae78736cd615f374d3085123a210448e74fc6393
+        address: "0xae78736cd615f374d3085123a210448e74fc6393"
         start_block: 18600000 // [!code focus]
 ```
 
@@ -306,6 +310,7 @@ come in. You can read more about this [here](/docs/start-building/live-indexing-
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks:
   - name: ethereum
     chain_id: 1
@@ -317,7 +322,7 @@ contracts: // [!code focus]
   - name: RocketPoolETH
     details:
       - network: ethereum
-        address: 0xae78736cd615f374d3085123a210448e74fc6393
+        address: "0xae78736cd615f374d3085123a210448e74fc6393"
         start_block: 18600000
         end_block: 18718056 // [!code focus]
 ```
@@ -332,6 +337,7 @@ networks.
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks: // [!code focus]
   - name: ethereum // [!code focus]
     chain_id: 1 // [!code focus]
@@ -346,11 +352,11 @@ contracts: // [!code focus]
   - name: RocketPoolETH
     details: // [!code focus]
     - network: ethereum // [!code focus]
-      address: 0xae78736cd615f374d3085123a210448e74fc6393 // [!code focus]
+      address: "0xae78736cd615f374d3085123a210448e74fc6393" // [!code focus]
       start_block: 18600000 // [!code focus]
       end_block: 18718056 // [!code focus]
     - network: base // [!code focus]
-      address: 0xba25348cd615f374d3085123a210448e74fa3333 // [!code focus]
+      address: "0xba25348cd615f374d3085123a210448e74fa3333" // [!code focus]
       start_block: 18118056 // [!code focus]
       end_block: 18918056 // [!code focus]
 ```
@@ -363,6 +369,7 @@ The ABI of the contract pointing to the JSON file in the repository. It can be a
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks:
   - name: ethereum
     chain_id: 1
@@ -374,10 +381,39 @@ contracts: // [!code focus]
   - name: RocketPoolETH
     details:
       - network: ethereum
-        address: 0xae78736cd615f374d3085123a210448e74fc6393
+        address: "0xae78736cd615f374d3085123a210448e74fc6393"
         start_block: 18600000
         end_block: 18718056
     abi: ./abis/RocketTokenRETH.abi.json // [!code focus]
+```
+
+### Many ABIs
+
+If you need to use many ABIs in the single contract you can pass in an array 
+this is useful if you have a contract which has several different implementations ABIs.
+
+```yaml [rindexer.yaml]
+name: rETHIndexer
+description: My first rindexer project
+repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
+networks:
+  - name: ethereum
+    chain_id: 1
+    rpc: https://mainnet.gateway.tenderly.co
+storage:
+  postgres:
+    enabled: true
+contracts: // [!code focus]
+  - name: RocketPoolETH
+    details:
+      - network: ethereum
+        address: "0xae78736cd615f374d3085123a210448e74fc6393"
+        start_block: 18600000
+        end_block: 18718056
+    abi: 
+      - ./abis/RocketTokenRETH.abi.json // [!code focus]
+      - ./abis/RocketTokenRETH2.abi.json // [!code focus]
 ```
 
 ## include_events
@@ -392,6 +428,7 @@ This is optional if you do not provide this it will include all events in the AB
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks:
 - name: ethereum
   chain_id: 1
@@ -403,7 +440,7 @@ contracts: // [!code focus]
   - name: RocketPoolETH
     details:
       - network: ethereum
-        address: 0xae78736cd615f374d3085123a210448e74fc6393
+        address: "0xae78736cd615f374d3085123a210448e74fc6393"
         start_block: 18600000
         end_block: 18718056
     abi: ./abis/RocketTokenRETH.abi.json
@@ -428,6 +465,7 @@ This is optional if you do not provide this it will assume speed is more importa
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks:
 - name: ethereum
   chain_id: 1
@@ -439,7 +477,7 @@ contracts: // [!code focus]
   - name: RocketPoolETH
     details:
       - network: ethereum
-        address: 0xae78736cd615f374d3085123a210448e74fc6393
+        address: "0xae78736cd615f374d3085123a210448e74fc6393"
         start_block: 18600000
         end_block: 18718056
     abi: ./abis/RocketTokenRETH.abi.json
@@ -482,6 +520,7 @@ This is optional if you do not provide this it will assume speed is more importa
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks:
 - name: ethereum
   chain_id: 1
@@ -493,7 +532,7 @@ contracts: // [!code focus]
   - name: RocketPoolETH
     details:
       - network: ethereum
-        address: 0xae78736cd615f374d3085123a210448e74fc6393
+        address: "0xae78736cd615f374d3085123a210448e74fc6393"
         start_block: 18600000
         end_block: 18718056
     abi: ./abis/RocketTokenRETH.abi.json
@@ -521,6 +560,7 @@ WrappedRocketPoolETH example below does not exist on the chain, this is just an 
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks:
 - name: ethereum
   chain_id: 1
@@ -541,7 +581,7 @@ contracts: // [!code focus]
   - name: RocketPoolETH
     details:
       - network: ethereum
-        address: 0xae78736cd615f374d3085123a210448e74fc6393
+        address: "0xae78736cd615f374d3085123a210448e74fc6393"
         start_block: 18600000
         end_block: 18718056
     abi: ./abis/RocketTokenRETH.abi.json
@@ -576,6 +616,7 @@ This is optional if you do not provide this it will index the latest blocks inst
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks:
 - name: ethereum
   chain_id: 1
@@ -587,7 +628,7 @@ contracts: // [!code focus]
   - name: RocketPoolETH
     details:
       - network: ethereum
-        address: 0xae78736cd615f374d3085123a210448e74fc6393
+        address: "0xae78736cd615f374d3085123a210448e74fc6393"
         start_block: 18600000
         end_block: 18718056
     abi: ./abis/RocketTokenRETH.abi.json
@@ -610,6 +651,7 @@ This is optional if you do not provide this it will generate a CSV file if the C
 name: rETHIndexer
 description: My first rindexer project
 repository: https://github.com/joshstevens19/rindexer
+project_type: no-code
 networks:
 - name: ethereum
   chain_id: 1
@@ -621,7 +663,7 @@ contracts: // [!code focus]
   - name: RocketPoolETH
     details:
       - network: ethereum
-        address: 0xae78736cd615f374d3085123a210448e74fc6393
+        address: "0xae78736cd615f374d3085123a210448e74fc6393"
         start_block: 18600000
         end_block: 18718056
     abi: ./abis/RocketTokenRETH.abi.json
@@ -630,3 +672,12 @@ contracts: // [!code focus]
       - Approval
     generate_csv: true // [!code focus]
 ```
+
+## streams
+
+You can configure streams to stream the data to other services, this is useful if you want to use other services
+to index the data. You can read more about it [here](/docs/start-building/streams).
+
+## chat
+
+You can configure chat to send messages You can read more about it [here](/docs/start-building/chatbots).

@@ -7,9 +7,11 @@ use ethers::{
     prelude::{Bytes, H128, H160, H256, H512, U128, U256, U512, U64},
 };
 use rust_decimal::Decimal;
+use serde_json::{json, Value};
 use tokio_postgres::types::{to_sql_checked, IsNull, ToSql, Type as PgType};
+use tracing::error;
 
-use crate::abi::ABIInput;
+use crate::{abi::ABIInput, event::callback_registry::TxInformation};
 
 #[derive(Debug, Clone)]
 pub enum EthereumSqlTypeWrapper {
@@ -320,32 +322,88 @@ impl ToSql for EthereumSqlTypeWrapper {
     to_sql_checked!();
 }
 
+#[allow(clippy::manual_strip)]
 pub fn solidity_type_to_ethereum_sql_type_wrapper(
     abi_type: &str,
 ) -> Option<EthereumSqlTypeWrapper> {
-    match abi_type {
-        "string" => Some(EthereumSqlTypeWrapper::String(String::new())),
-        "string[]" => Some(EthereumSqlTypeWrapper::VecString(Vec::new())),
-        "address" => Some(EthereumSqlTypeWrapper::Address(Address::zero())),
-        "address[]" => Some(EthereumSqlTypeWrapper::VecAddress(Vec::new())),
-        "bool" => Some(EthereumSqlTypeWrapper::Bool(false)),
-        "bool[]" => Some(EthereumSqlTypeWrapper::VecBool(Vec::new())),
-        "int256" | "uint256" => Some(EthereumSqlTypeWrapper::U256(U256::zero())),
-        "int256[]" | "uint256[]" => Some(EthereumSqlTypeWrapper::VecU256(Vec::new())),
-        "int128" | "uint128" => Some(EthereumSqlTypeWrapper::U128(U128::zero())),
-        "int128[]" | "uint128[]" => Some(EthereumSqlTypeWrapper::VecU128(Vec::new())),
-        "int64" | "uint64" => Some(EthereumSqlTypeWrapper::U64(U64::zero())),
-        "int64[]" | "uint64[]" => Some(EthereumSqlTypeWrapper::VecU64(Vec::new())),
-        "int32" | "uint32" => Some(EthereumSqlTypeWrapper::U32(0)),
-        "int32[]" | "uint32[]" => Some(EthereumSqlTypeWrapper::VecU32(Vec::new())),
-        "int16" | "uint16" => Some(EthereumSqlTypeWrapper::U16(0)),
-        "int16[]" | "uint16[]" => Some(EthereumSqlTypeWrapper::VecU16(Vec::new())),
-        "int8" | "uint8" => Some(EthereumSqlTypeWrapper::U8(0)),
-        "int8[]" | "uint8[]" => Some(EthereumSqlTypeWrapper::VecU8(Vec::new())),
-        t if t.starts_with("bytes") && t.contains("[]") => {
-            Some(EthereumSqlTypeWrapper::VecBytes(Vec::new()))
+    let is_array = abi_type.ends_with("[]");
+    let base_type = abi_type.trim_end_matches("[]");
+
+    match base_type {
+        "string" => Some(if is_array {
+            EthereumSqlTypeWrapper::VecString(Vec::new())
+        } else {
+            EthereumSqlTypeWrapper::String(String::new())
+        }),
+        "address" => Some(if is_array {
+            EthereumSqlTypeWrapper::VecAddress(Vec::new())
+        } else {
+            EthereumSqlTypeWrapper::Address(Address::zero())
+        }),
+        "bool" => Some(if is_array {
+            EthereumSqlTypeWrapper::VecBool(Vec::new())
+        } else {
+            EthereumSqlTypeWrapper::Bool(false)
+        }),
+        t if t.starts_with("bytes") => Some(if is_array {
+            EthereumSqlTypeWrapper::VecBytes(Vec::new())
+        } else {
+            EthereumSqlTypeWrapper::Bytes(Bytes::new())
+        }),
+        t if t.starts_with("int") || t.starts_with("uint") => {
+            let size: usize = if t.starts_with("int") {
+                t[3..].parse().unwrap_or(256)
+            } else {
+                t[4..].parse().unwrap_or(256)
+            };
+
+            Some(match size {
+                8 => {
+                    if is_array {
+                        EthereumSqlTypeWrapper::VecU8(Vec::new())
+                    } else {
+                        EthereumSqlTypeWrapper::U8(0)
+                    }
+                }
+                16 => {
+                    if is_array {
+                        EthereumSqlTypeWrapper::VecU16(Vec::new())
+                    } else {
+                        EthereumSqlTypeWrapper::U16(0)
+                    }
+                }
+                24 | 32 => {
+                    if is_array {
+                        EthereumSqlTypeWrapper::VecU32(Vec::new())
+                    } else {
+                        EthereumSqlTypeWrapper::U32(0)
+                    }
+                }
+                40 | 48 | 56 | 64 => {
+                    if is_array {
+                        EthereumSqlTypeWrapper::VecU64(Vec::new())
+                    } else {
+                        EthereumSqlTypeWrapper::U64(U64::zero())
+                    }
+                }
+                72 | 80 | 88 | 96 | 104 | 112 | 120 | 128 => {
+                    if is_array {
+                        EthereumSqlTypeWrapper::VecU128(Vec::new())
+                    } else {
+                        EthereumSqlTypeWrapper::U128(U128::zero())
+                    }
+                }
+                136 | 144 | 152 | 160 | 168 | 176 | 184 | 192 | 200 | 208 | 216 | 224 | 232 |
+                240 | 248 | 256 => {
+                    if is_array {
+                        EthereumSqlTypeWrapper::VecU256(Vec::new())
+                    } else {
+                        EthereumSqlTypeWrapper::U256(U256::zero())
+                    }
+                }
+                _ => return None,
+            })
         }
-        t if t.starts_with("bytes") => Some(EthereumSqlTypeWrapper::Bytes(Bytes::new())),
         _ => None,
     }
 }
@@ -427,7 +485,11 @@ fn convert_int(value: &Int, target_type: &EthereumSqlTypeWrapper) -> EthereumSql
         EthereumSqlTypeWrapper::U8(_) | EthereumSqlTypeWrapper::VecU8(_) => {
             EthereumSqlTypeWrapper::U8(value.low_u32() as u8)
         }
-        _ => panic!("{:?} - Unsupported target type - {:?}", value, target_type),
+        _ => {
+            let error_message = format!("Unsupported target type - {:?}", target_type);
+            error!("{}", error_message);
+            panic!("{}", error_message)
+        }
     }
 }
 
@@ -439,7 +501,9 @@ fn map_dynamic_int_to_ethereum_sql_type_wrapper(
     if let Some(target_type) = sql_type_wrapper {
         convert_int(value, &target_type)
     } else {
-        panic!("Unknown int type for abi input: {:?}", abi_input);
+        let error_message = format!("Unknown int type for abi input: {:?}", abi_input);
+        error!("{}", error_message);
+        panic!("{}", error_message);
     }
 }
 
@@ -655,4 +719,111 @@ fn serialize_vec_decimal<T: ToString>(
 
     out.extend_from_slice(&buf);
     Ok(IsNull::No)
+}
+
+fn count_components(components: &[ABIInput]) -> usize {
+    components
+        .iter()
+        .map(|component| {
+            if component.type_ == "tuple" {
+                let nested_components =
+                    component.components.as_ref().expect("Tuple should have components defined");
+                1 + count_components(nested_components)
+            } else {
+                1
+            }
+        })
+        .sum()
+}
+
+pub fn map_ethereum_wrapper_to_json(
+    abi_inputs: &[ABIInput],
+    wrappers: &[EthereumSqlTypeWrapper],
+    transaction_information: &TxInformation,
+    is_within_tuple: bool,
+) -> Value {
+    let mut result = serde_json::Map::new();
+
+    let mut current_wrapper_index = 0;
+    let mut wrappers_index_processed = Vec::new();
+    for abi_input in abi_inputs.iter() {
+        // tuples will take in multiple wrapper indexes, so we need to skip them if processed
+        if wrappers_index_processed.contains(&current_wrapper_index) {
+            continue;
+        }
+        if let Some(wrapper) = wrappers.get(current_wrapper_index) {
+            if abi_input.type_ == "tuple" {
+                let components =
+                    abi_input.components.as_ref().expect("Tuple should have components defined");
+                let total_properties = count_components(components);
+                let tuple_value = map_ethereum_wrapper_to_json(
+                    components,
+                    &wrappers[current_wrapper_index..total_properties],
+                    transaction_information,
+                    true,
+                );
+                result.insert(abi_input.name.clone(), tuple_value);
+                for i in current_wrapper_index..total_properties {
+                    wrappers_index_processed.push(i);
+                }
+                current_wrapper_index = total_properties;
+            } else {
+                let value = match wrapper {
+                    EthereumSqlTypeWrapper::U64(u) => json!(u),
+                    EthereumSqlTypeWrapper::VecU64(u64s) => json!(u64s),
+                    EthereumSqlTypeWrapper::U128(u) => json!(u.to_string()),
+                    EthereumSqlTypeWrapper::VecU128(u128s) => {
+                        json!(u128s.iter().map(|u| u.to_string()).collect::<Vec<_>>())
+                    }
+                    EthereumSqlTypeWrapper::U256(u) => json!(u.to_string()),
+                    EthereumSqlTypeWrapper::VecU256(u256s) => {
+                        json!(u256s.iter().map(|u| u.to_string()).collect::<Vec<_>>())
+                    }
+                    EthereumSqlTypeWrapper::U512(u) => json!(u.to_string()),
+                    EthereumSqlTypeWrapper::VecU512(u512s) => {
+                        json!(u512s.iter().map(|u| u.to_string()).collect::<Vec<_>>())
+                    }
+                    EthereumSqlTypeWrapper::H128(h) => json!(h),
+                    EthereumSqlTypeWrapper::VecH128(h128s) => json!(h128s),
+                    EthereumSqlTypeWrapper::H160(h) => json!(h),
+                    EthereumSqlTypeWrapper::VecH160(h160s) => json!(h160s),
+                    EthereumSqlTypeWrapper::H256(h) => json!(h),
+                    EthereumSqlTypeWrapper::VecH256(h256s) => json!(h256s),
+                    EthereumSqlTypeWrapper::H512(h) => json!(h),
+                    EthereumSqlTypeWrapper::VecH512(h512s) => json!(h512s),
+                    EthereumSqlTypeWrapper::Address(address) => json!(address),
+                    EthereumSqlTypeWrapper::VecAddress(addresses) => json!(addresses),
+                    EthereumSqlTypeWrapper::Bool(b) => json!(b),
+                    EthereumSqlTypeWrapper::VecBool(bools) => json!(bools),
+                    EthereumSqlTypeWrapper::U32(u) => json!(u),
+                    EthereumSqlTypeWrapper::VecU32(u32s) => json!(u32s),
+                    EthereumSqlTypeWrapper::U16(u) => json!(u),
+                    EthereumSqlTypeWrapper::VecU16(u16s) => json!(u16s),
+                    EthereumSqlTypeWrapper::U8(u) => json!(u),
+                    EthereumSqlTypeWrapper::VecU8(u8s) => json!(u8s),
+                    EthereumSqlTypeWrapper::String(s) => json!(s),
+                    EthereumSqlTypeWrapper::VecString(strings) => json!(strings),
+                    EthereumSqlTypeWrapper::Bytes(bytes) => json!(hex::encode(bytes)),
+                    EthereumSqlTypeWrapper::VecBytes(bytes) => {
+                        json!(bytes.iter().map(hex::encode).collect::<Vec<_>>())
+                    }
+                };
+                result.insert(abi_input.name.clone(), value);
+                wrappers_index_processed.push(current_wrapper_index);
+                current_wrapper_index += 1;
+            }
+        } else {
+            panic!(
+                "No wrapper found for ABI input {:?} and wrapper index {} - wrappers {:?}",
+                abi_input, current_wrapper_index, wrappers
+            );
+        }
+    }
+
+    // only do this at the top level
+    if !is_within_tuple {
+        result.insert("transaction_information".to_string(), json!(transaction_information));
+    }
+
+    Value::Object(result)
 }

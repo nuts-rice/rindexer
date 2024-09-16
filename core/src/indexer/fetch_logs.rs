@@ -117,6 +117,7 @@ pub fn fetch_logs_stream(
                 current_filter,
                 &config.info_log_name,
                 &config.semaphore,
+                config.network_contract.disable_logs_bloom_checks,
             )
             .await;
         }
@@ -206,6 +207,10 @@ async fn fetch_historic_logs_stream(
             }
 
             if logs_empty {
+                info!(
+                    "{} - No events found between blocks {} - {}",
+                    info_log_name, from_block, to_block
+                );
                 let next_from_block = to_block + 1;
                 return if next_from_block > snapshot_to_block {
                     None
@@ -317,6 +322,7 @@ async fn live_indexing_stream(
     mut current_filter: RindexerEventFilter,
     info_log_name: &str,
     semaphore: &Arc<Semaphore>,
+    disable_logs_bloom_checks: bool,
 ) {
     let mut last_seen_block_number = U64::from(0);
     loop {
@@ -359,6 +365,7 @@ async fn live_indexing_stream(
 
                         let to_block = safe_block_number;
                         if from_block == to_block &&
+                            !disable_logs_bloom_checks &&
                             !is_relevant_block(contract_address, topic_id, &latest_block)
                         {
                             debug!(
