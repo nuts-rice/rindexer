@@ -107,6 +107,7 @@ pub async fn start_indexing(
             .iter()
             .find(|c| c.name == event.contract.name)
             .and_then(|c| c.streams.as_ref());
+
         for network_contract in event.contract.details.iter() {
             let config = SyncConfig {
                 project_path,
@@ -158,6 +159,7 @@ pub async fn start_indexing(
 
             let start_block = last_known_start_block
                 .unwrap_or(network_contract.start_block.unwrap_or(latest_block));
+            info!("{} start_block is {}", event.info_log_name(), start_block);
             let end_block =
                 std::cmp::min(network_contract.end_block.unwrap_or(latest_block), latest_block);
             if let Some(end_block) = network_contract.end_block {
@@ -209,8 +211,8 @@ pub async fn start_indexing(
             };
 
             let dependencies_status = ContractEventDependencies::dependencies_status(
-                &event.contract.name,
-                &event.event_name,
+                &event_processing_config.contract_name,
+                &event_processing_config.event_name,
                 dependencies,
             );
 
@@ -232,13 +234,12 @@ pub async fn start_indexing(
                 }
 
                 ContractEventsDependenciesConfig::add_to_event_or_new_entry(
-                    &event.contract.name,
                     &mut dependency_event_processing_configs,
                     event_processing_config_arc,
                     dependencies,
                 );
             } else {
-                let process_event = tokio::spawn(process_event(event_processing_config));
+                let process_event = tokio::spawn(process_event(event_processing_config, false));
                 non_blocking_process_events.push(process_event);
             }
         }
@@ -247,7 +248,6 @@ pub async fn start_indexing(
     // apply dependency events config after processing to avoid ordering issues
     for apply in apply_cross_contract_dependency_events_config_after_processing {
         let (dependency_in_other_contract, event_processing_config) = apply;
-
         ContractEventsDependenciesConfig::add_to_event_or_panic(
             &dependency_in_other_contract,
             &mut dependency_event_processing_configs,

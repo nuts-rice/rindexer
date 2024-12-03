@@ -5,9 +5,12 @@
 
 ### Features
 -------------------------------------------------
+feat: handle graceful shutdowns (deployed if install from github)
 
 ### Bug fixes
 -------------------------------------------------
+fix: resolve race condition of dependency blocking indexing (deployed if install from github)
+fix: add new type for EthereumSqlTypeWrapper to handle VARCHAR strings (deployed if install from github)
 
 ### Breaking changes
 -------------------------------------------------
@@ -16,6 +19,89 @@
 -------------------------------------------------
 
 all release branches are deployed through `release/VERSION_NUMBER` branches
+
+## 0.10.0-beta - 15th October 2024
+
+github branch - https://github.com/joshstevens19/rindexer/tree/release/0.10.0
+
+- linux binary - https://rindexer.xyz/releases/linux-amd64/0.10.0/rindexer_linux-amd64.tar.gz
+- mac apple silicon binary - https://rindexer.xyz/releases/darwin-arm64/0.10.0/rindexer_darwin-arm64.tar.gz
+- mac apple intel binary - https://rindexer.xyz/releases/darwin-amd64/0.10.0/rindexer_darwin-amd64.tar.gz
+- windows binary - https://rindexer/releases.xyz/win32-amd64/0.10.0/rindexer_win32-amd64.zip
+
+### Features
+-------------------------------------------------
+- feat: expose an insert_bulk new postgres function to make inserting bulk data easier
+- feat: expose new ethereum sql type wrappers for bytes types#
+- feat: expose postgres ToSql trait
+- feat: support with_transaction in postgres client
+- feat: get the block timestamp from the RPC call (its an option as not all providers expose it)
+- feat: allow you to override environment file path
+
+### Bug fixes
+-------------------------------------------------
+- fix: dependency events not being applied to the correct contract
+- fix: resolve defining environment variables in contract address fields in the yaml
+- fix: resolve topic_id packing issues
+
+## 0.9.0-beta - 19th September 2024
+
+github branch - https://github.com/joshstevens19/rindexer/tree/release/0.9.0
+
+- linux binary - https://rindexer.xyz/releases/linux-amd64/0.9.0/rindexer_linux-amd64.tar.gz
+- mac apple silicon binary - https://rindexer.xyz/releases/darwin-arm64/0.9.0/rindexer_darwin-arm64.tar.gz
+- mac apple intel binary - https://rindexer.xyz/releases/darwin-amd64/0.9.0/rindexer_darwin-amd64.tar.gz
+- windows binary - https://rindexer/releases.xyz/win32-amd64/0.9.0/rindexer_win32-amd64.zip
+
+### Features
+-------------------------------------------------
+- feat: allow some other attributes on the generated event typings
+
+### Bug fixes
+-------------------------------------------------
+- fix: handle signed integers throughout rindexer
+- fix: generating global types would repeat the same code on a regenerate causing issues
+
+### Breaking changes
+-------------------------------------------------
+- breaking: rindexer had an parsing error meaning stuff like `UniswapV3Pool` would parse to uniswap_v_3_pool. This caused
+some other issues with mapping to object names so now it has been fixed and in the example above it will be `uniswap_v3_pool`,
+if you have any running indexers with these buggy names in your db you just need to rename them and same with the `rindexer.internal` tables which will
+have these odd names as well.
+
+## 0.8.0-beta - 17th September 2024
+
+github branch - https://github.com/joshstevens19/rindexer/tree/release/0.8.0
+
+- linux binary - https://rindexer.xyz/releases/linux-amd64/0.8.0/rindexer_linux-amd64.tar.gz
+- mac apple silicon binary - https://rindexer.xyz/releases/darwin-arm64/0.8.0/rindexer_darwin-arm64.tar.gz
+- mac apple intel binary - https://rindexer.xyz/releases/darwin-amd64/0.8.0/rindexer_darwin-amd64.tar.gz
+- windows binary - https://rindexer/releases.xyz/win32-amd64/0.8.0/rindexer_win32-amd64.zip
+
+### Features
+-------------------------------------------------
+- feat: info log if no new blocks are published in the last 20 seconds to avoid people thinking rindexer is stuck
+
+### Bug fixes
+-------------------------------------------------
+- fix: pascal case still has some edge cases on parsing
+- fix: allow #![allow(non_snake_case)] in indexer code
+- fix: still generate internal tables for rindexer even if creating new event tables is disabled
+
+## 0.7.1-beta - 17th September 2024
+
+github branch - https://github.com/joshstevens19/rindexer/tree/release/0.7.1
+
+- linux binary - https://rindexer.xyz/releases/linux-amd64/0.7.1/rindexer_linux-amd64.tar.gz
+- mac apple silicon binary - https://rindexer.xyz/releases/darwin-arm64/0.7.1/rindexer_darwin-arm64.tar.gz
+- mac apple intel binary - https://rindexer.xyz/releases/darwin-amd64/0.7.1/rindexer_darwin-amd64.tar.gz
+- windows binary - https://rindexer/releases.xyz/win32-amd64/0.7.1/rindexer_win32-amd64.zip
+
+### Bug fixes
+-------------------------------------------------
+- fix: throw error if contract names are not unique
+- fix: allow non camel case types in generated code
+- fix: pascal case not parsing capitals full words correctly
 
 ## 0.7.0-beta - 16th September 2024
 
