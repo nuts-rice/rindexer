@@ -24,6 +24,7 @@ use crate::{
         storage::RelationshipsAndIndexersError,
         yaml::{read_manifest, ReadManifestError},
     },
+    meterics::MetricsDetails,
     setup_info_logger,
 };
 
@@ -34,6 +35,7 @@ pub struct IndexingDetails {
 pub struct StartDetails<'a> {
     pub manifest_path: &'a PathBuf,
     pub indexing_details: Option<IndexingDetails>,
+    pub metrics_details: MetricsDetails,
     pub graphql_details: GraphqlOverrideSettings,
 }
 
@@ -78,6 +80,8 @@ pub enum StartRindexerError {
     ShutdownHandlerFailed(String),
 }
 
+// static METRICS: LazyLock<(Prom)>
+
 async fn handle_shutdown(signal: &str) {
     // Mark shutdown state only once, at the very beginning of the shutdown process
     mark_shutdown_started();
@@ -113,6 +117,8 @@ pub async fn start_rindexer(details: StartDetails<'_>) -> Result<(), StartRindex
                 setup_info_logger();
                 info!("Starting rindexer rust project");
             }
+
+            let metrics_server_handle = if details.metrics_details.enabled {};
 
             // Spawn a separate task for the GraphQL server if specified
             let graphql_server_handle =
@@ -237,6 +243,7 @@ pub struct StartNoCodeDetails<'a> {
     pub manifest_path: &'a PathBuf,
     pub indexing_details: IndexerNoCodeDetails,
     pub graphql_details: GraphqlOverrideSettings,
+    pub metrics_details: MetricsDetails,
 }
 
 #[derive(thiserror::Error, Debug)]

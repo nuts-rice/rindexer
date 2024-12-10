@@ -86,6 +86,7 @@ pub async fn setup_no_code(
                     manifest_path: details.manifest_path,
                     indexing_details: None,
                     graphql_details: details.graphql_details,
+                    metrics_details: details.metrics_details,
                 });
             }
 
@@ -117,6 +118,7 @@ pub async fn setup_no_code(
                 manifest_path: details.manifest_path,
                 indexing_details: Some(IndexingDetails { registry }),
                 graphql_details: details.graphql_details,
+                metrics_details: details.metrics_details,
             })
         }
         None => Err(SetupNoCodeError::NoProjectPathFoundUsingParentOfManifestPath),

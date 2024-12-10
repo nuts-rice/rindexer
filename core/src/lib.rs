@@ -5,8 +5,8 @@ pub mod manifest;
 
 mod system_state;
 pub use system_state::{initiate_shutdown, is_running};
-pub mod meterics;
 mod database;
+pub mod meterics;
 pub use database::postgres::{
     client::{PostgresClient, ToSql},
     generate::drop_tables_for_indexer_sql,

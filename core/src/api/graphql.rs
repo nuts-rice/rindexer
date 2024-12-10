@@ -9,6 +9,7 @@ use std::{
     time::Duration,
 };
 
+use prometheus::HistogramTimer;
 use reqwest::{Client, Error};
 use serde_json::{json, Value};
 use tokio::sync::{oneshot, oneshot::Sender};
@@ -140,7 +141,6 @@ pub async fn start_graphql_server(
         settings.filter_only_on_indexed_columns,
         settings.disable_advanced_filters,
     );
-
     // Do not need now with the main shutdown keeping around in-case
     // setup_ctrlc_handler(Arc::new(Mutex::new(None::<Child>)));
 
