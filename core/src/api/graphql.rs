@@ -9,7 +9,6 @@ use std::{
     time::Duration,
 };
 
-use prometheus::HistogramTimer;
 use reqwest::{Client, Error};
 use serde_json::{json, Value};
 use tokio::sync::{oneshot, oneshot::Sender};

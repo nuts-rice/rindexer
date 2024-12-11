@@ -1,5 +1,6 @@
 use std::{path::PathBuf, sync::Arc};
 
+use metrics_prometheus::metric::bundle::MetricVec;
 use tokio::signal;
 use tracing::{error, info};
 
@@ -117,8 +118,21 @@ pub async fn start_rindexer(details: StartDetails<'_>) -> Result<(), StartRindex
                 setup_info_logger();
                 info!("Starting rindexer rust project");
             }
-
-            let metrics_server_handle = if details.metrics_details.enabled {};
+            //TODO: move request increment to actual requests
+            let metrics_server_handle = if details.metrics_details.enabled {
+                let manifest_clone = Arc::clone(&manifest);
+                let indexer = manifest_clone.to_indexer();
+                let mut metrics_settings = details.metrics_details.clone();
+                Some(tokio::spawn(async move {
+                    if let Err(e) =
+                        crate::meterics::start_metrics_server(&indexer, metrics_settings).await
+                    {
+                        error!("Failed to start metrics server: {:?}", e);
+                    }
+                }))
+            } else {
+                None
+            };
 
             // Spawn a separate task for the GraphQL server if specified
             let graphql_server_handle =

@@ -7,7 +7,8 @@ use crate::{
     manifest::{
         contract::Contract, global::Global, graphql::GraphQLSettings, network::Network,
         phantom::Phantom, storage::Storage,
-    }, meterics::MetricsDetails,
+    },
+    meterics::MetricsDetails,
 };
 
 fn deserialize_project_type<'de, D>(deserializer: D) -> Result<ProjectType, D::Error>
@@ -79,7 +80,6 @@ pub struct Manifest {
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub metrics: Option<MetricsDetails>,
-
 }
 
 impl Manifest {

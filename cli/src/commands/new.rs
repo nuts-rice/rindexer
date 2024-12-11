@@ -189,6 +189,7 @@ pub fn handle_new_command(
             },
         },
         graphql: None,
+        metrics: None,
     };
 
     // Write the rindexer.yaml file

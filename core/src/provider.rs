@@ -44,6 +44,9 @@ impl JsonRpcCachedProvider {
     }
 
     pub async fn get_latest_block(&self) -> Result<Option<Arc<Block<H256>>>, ProviderError> {
+        crate::meterics::RINDEXER_HTTP_REQUESTS
+            .with_label_values(&["get_latest_block", "./"])
+            .inc();
         let mut cache_guard = self.cache.lock().await;
 
         if let Some((timestamp, block)) = &*cache_guard {
@@ -66,6 +69,10 @@ impl JsonRpcCachedProvider {
     }
 
     pub async fn get_block_number(&self) -> Result<U64, ProviderError> {
+        crate::meterics::RINDEXER_HTTP_REQUESTS
+            .with_label_values(&["get_latest_block", "./"])
+            .inc();
+
         self.provider.get_block_number().await
     }
 
@@ -73,6 +80,10 @@ impl JsonRpcCachedProvider {
         &self,
         filter: &RindexerEventFilter,
     ) -> Result<Vec<WrappedLog>, ProviderError> {
+        crate::meterics::RINDEXER_HTTP_REQUESTS
+            .with_label_values(&["get_latest_block", "./"])
+            .inc();
+
         // rindexer_info!("get_logs DEBUG [{:?}]", filter.raw_filter());
         // LEAVING FOR NOW CONTEXT: TEMP FIX TO MAKE SURE FROM BLOCK IS ALWAYS SET
         // let mut filter = filter.raw_filter().clone();
@@ -164,6 +175,13 @@ impl CreateNetworkProvider {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_provider_metrics_request_total() {
+        let rpc_url = "http://localhost:8545";
+        let client = create_client(rpc_url, Some(660), None, HeaderMap::new()).unwrap();
+        let result = client.get_latest_block();
+    }
 
     #[test]
     fn test_create_retry_client() {

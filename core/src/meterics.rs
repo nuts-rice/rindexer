@@ -11,14 +11,15 @@ use prometheus::{
     HistogramVec, IntCounterVec, IntGauge, TextEncoder,
 };
 use prometheus_metric_storage::StorageRegistry;
-use serde::{Serialize, Deserialize};
+use reqwest::{Client, Error, Response};
+use serde::{Deserialize, Serialize};
 
 use crate::indexer::Indexer;
-
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct MetricsDetails {
     pub enabled: bool,
+    pub port: Option<u16>,
 }
 
 // const METRICS_REGISTRY: prometheus::Registry = prometheus::Registry::new();
@@ -85,7 +86,43 @@ pub struct MetricsServer {
 //start up prometheus exe here
 pub async fn start_metrics_server(
     indexer: &Indexer,
-    // metrics_setting: MetricsSetting,
-) -> Result<MetricsServer, StartMetricServerError> {
+    metrics_details: MetricsDetails,
+) -> Result<(), StartMetricServerError> {
+    tracing::info!("Starting metrics server");
+    crate::meterics::RINDEXER_HTTP_REQUESTS.with_label_values(&["GET", "/metrics"]).inc();
+
+    let encoder = TextEncoder::new();
+    let mut buffer = vec![];
+    encoder.encode(&prometheus::gather(), &mut buffer).expect("Failed to encode metrics");
+
+    let response = String::from_utf8(buffer.clone()).expect("Failed to convert bytes to string");
+    tracing::info!("Metrics response: {}", response);
+
+    // let json: serde_json::Value = serde_json::from_str(&response).expect("Failed to convert to
+    // json");
+    buffer.clear();
+
+    let metrics_endpoint = format!("https://localhost:{}/metrics", metrics_details.port.unwrap());
+    tracing::info!("Metrics endpoint: {}", metrics_endpoint);
+    let client = reqwest::Client::new();
+    // let res = client.post(&metrics_endpoint).body(response).send().await.unwrap();
+
+    Ok(())
+}
+// match res {
+//     Ok(_) => {
+//         let pid = std::process::id();
+//         Ok(MetricsServer { pid })
+//     }
+//     Err(e) => Err(StartMetricServerError::MetricServerStartupError(e.to_string())),
+// }
+
+pub async fn spawn_start_metrics() {
+    unimplemented!()
+}
+
+pub async fn metrics_handler() -> Result<(), StartMetricServerError> {
+    tracing::debug!("Starting metrics handler");
+    let client = Client::new();
     unimplemented!()
 }
