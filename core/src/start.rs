@@ -5,7 +5,7 @@ use tokio::signal;
 use tracing::{error, info};
 
 use crate::{
-    api::{start_graphql_server, GraphqlOverrideSettings, StartGraphqlServerError},
+    api::{start_graphql_server, GraphqlOverrideSettings, StartGraphqlServerError, start_metrics_server, StartMetricServerError},
     database::postgres::{
         client::PostgresConnectionError,
         indexes::{ApplyPostgresIndexesError, PostgresIndexResult},
@@ -125,7 +125,7 @@ pub async fn start_rindexer(details: StartDetails<'_>) -> Result<(), StartRindex
                 let mut metrics_settings = details.metrics_details.clone();
                 Some(tokio::spawn(async move {
                     if let Err(e) =
-                        crate::meterics::start_metrics_server(&indexer, metrics_settings).await
+                        start_metrics_server(&indexer, metrics_settings).await
                     {
                         error!("Failed to start metrics server: {:?}", e);
                     }
