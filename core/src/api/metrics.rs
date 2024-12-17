@@ -15,7 +15,7 @@ use prometheus::{
 };
 use reqwest::{Client, Error, Response};
 
-use crate::{indexer::Indexer, meterics::MetricsDetails};
+use crate::{indexer::Indexer, meterics::MetricsDetails , helpers::kill_process_on_port };
 
 fn get_prometheus_exe() -> Result<PathBuf, ()> {
     unimplemented!()
@@ -38,7 +38,7 @@ pub struct MetricsServer {
 pub async fn start_metrics_server(
     indexer: &Indexer,
     metrics_details: MetricsDetails,
-) -> Result<(), StartMetricServerError> {
+) -> Result<Response, StartMetricServerError> {
     tracing::info!("Starting metrics server");
     crate::meterics::RINDEXER_HTTP_REQUESTS.with_label_values(&["GET", "/metrics"]).inc();
 
@@ -52,18 +52,43 @@ pub async fn start_metrics_server(
     // let json: serde_json::Value = serde_json::from_str(&response).expect("Failed to convert to
     // json");
     buffer.clear();
+    let port = metrics_details.port.unwrap();
 
-    let metrics_endpoint = format!("https://localhost:{}/metrics", metrics_details.port.unwrap());
+    let metrics_endpoint = format!("https://localhost:{}", port);
     tracing::info!("Metrics endpoint: {}", metrics_endpoint);
-    // let value: serde_json::Value = serde_json::from_str(&response).unwrap();
+    kill_process_on_port(port).map_err(|e| {
+        tracing::error!("Failed to kill process on port: {}", e);
+        StartMetricServerError::MetricServerStartupError(e)
+    })?;
     // tracing::info!("Metrics value: {:?}", value);
     let client = reqwest::Client::new();
-    client.post(&metrics_endpoint).body(response).send().await.unwrap();
+    let result = client.post(&metrics_endpoint).body(response).send().await.map_err(|e| {
+        tracing::error!("Failed to send metrics: {}", e);
+        StartMetricServerError::MetricServerStartupError(e.to_string())
+    })?;
+    // match client.post(&metrics_endpoint).body(response).send().await {
 
-    // client.post(&metrics_endpoint).body(response).send().await.unwrap();
-    // let res = client.post(&metrics_endpoint).body(response).send().await.unwrap();
+    //     Ok(response) if response.status().is_success() => {
+    //         let response_json = response.json::<serde_json::Value>().await;
+    //         match response_json {
+    //             Ok(response_json) => {
+    //                 if response_json.get("errors").is_none() {
+    //         tracing::info!("Metrics sent successfully");
+    //         tracing::info!("Metrics endpoint ready at {} ", metrics_endpoint);
+    //                 }
+    //             }
+    //     Err(_) => {
+    //         tracing::info!("error reaching metrics endpoint");
+    //     }
+    //         }
+    //     }
+    //     _ => {
+    //         tracing::info!("error reaching metrics endpoint");
+    //     }
+            
+    // }
 
-    Ok(())
+    Ok(result)
 }
 // match res {
 //     Ok(_) => {

@@ -16,3 +16,15 @@ services:
     ports:
       - 3001:3001
     restart: always
+
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: always
+    ports:
+      - '9090:9090'
+    volumes:
+      - ${PROJECT_PATH}:/app/project_path/prometheus
+    command:
+      - '--config.file=/app/project_path/prometheus/prometheus.yml'
+      - '--web.external-url=http://localhost:9090'
