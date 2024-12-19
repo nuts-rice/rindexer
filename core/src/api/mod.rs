@@ -5,4 +5,3 @@ mod metrics;
 pub use generate_schema::generate_graphql_queries;
 pub use graphql::{start_graphql_server, GraphqlOverrideSettings, StartGraphqlServerError};
 pub use metrics::{start_metrics_server, StartMetricServerError};
-

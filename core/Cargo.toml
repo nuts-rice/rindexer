@@ -43,7 +43,6 @@ tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "time"]
 chrono = { version = "0.4", features = ["serde"] }
 log = "0.4.20"
 colored = "2.0"
-hex = "0.4.3"
 uuid = { version = "1.10.0", features = ["v4"] }
 # do not change version as have to match ethers at the moment
 reqwest = { version = "0.11.27", features = ["json"] }
@@ -69,6 +68,7 @@ prometheus-metric-storage = "0.5.0"
 metrics-exporter-prometheus = "0.15.3"
 metrics-util = "0.17.0"
 prometheus = "0.13.4"
+warp = "0.3.7"
 
 [target.'cfg(not(windows))'.dependencies]
 rdkafka = { version = "0.36", features = ["tokio"] }

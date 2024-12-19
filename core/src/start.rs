@@ -3,9 +3,13 @@ use std::{path::PathBuf, sync::Arc};
 use metrics_prometheus::metric::bundle::MetricVec;
 use tokio::signal;
 use tracing::{error, info};
+use warp::Filter;
 
 use crate::{
-    api::{start_graphql_server, GraphqlOverrideSettings, StartGraphqlServerError, start_metrics_server, StartMetricServerError},
+    api::{
+        start_graphql_server, start_metrics_server, GraphqlOverrideSettings,
+        StartGraphqlServerError, StartMetricServerError,
+    },
     database::postgres::{
         client::PostgresConnectionError,
         indexes::{ApplyPostgresIndexesError, PostgresIndexResult},
@@ -118,21 +122,26 @@ pub async fn start_rindexer(details: StartDetails<'_>) -> Result<(), StartRindex
                 setup_info_logger();
                 info!("Starting rindexer rust project");
             }
-            //TODO: move request increment to actual requests
             let metrics_server_handle = if details.metrics_details.enabled {
                 let manifest_clone = Arc::clone(&manifest);
                 let indexer = manifest_clone.to_indexer();
                 let mut metrics_settings = details.metrics_details.clone();
                 Some(tokio::spawn(async move {
-                    if let Err(e) =
-                        start_metrics_server(&indexer, metrics_settings).await
-                    {
-                        error!("Failed to start metrics server: {:?}", e);
-                    }
+                    start_metrics_server(metrics_settings.port.unwrap()).await;
                 }))
             } else {
                 None
             };
+            // Some(tokio::spawn(async move {
+            //     if let Err(e) =
+            //         start_metrics_server(metrics_settings.port.unwrap()).await?;
+            //     {
+            //         error!("Failed to start metrics server: {:?}", e);
+            //     }
+            // }))
+            // } else {
+            // None
+            // };
 
             // Spawn a separate task for the GraphQL server if specified
             let graphql_server_handle =
