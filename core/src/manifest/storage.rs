@@ -80,6 +80,9 @@ pub struct PostgresDetails {
     pub drop_each_run: Option<bool>,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub binary_storage: Option<bool>,
+
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub relationships: Option<Vec<ForeignKeys>>,
 
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -134,6 +137,16 @@ impl Storage {
             Some(details) => details.enabled,
             None => false,
         }
+    }
+
+    pub fn postgres_binary_storage(&self) -> bool {
+        let enabled = self.postgres_enabled();
+        if !enabled {
+            return false;
+        }
+        self.postgres
+            .as_ref()
+            .map_or(false, |details| details.binary_storage.unwrap_or_default())
     }
 
     pub fn postgres_disable_create_tables(&self) -> bool {
